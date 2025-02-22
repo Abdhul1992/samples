@@ -1,0 +1,264 @@
+import java.util.HashMap;
+import java.util.Map;
+
+// Ingredient class to represent different ingredients
+class Ingredient {
+    private String name;
+    private int amount;
+
+    public Ingredient(String name, int amount) {
+        this.name = name;
+        this.amount = amount;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getAmount() {
+        return amount;
+    }
+
+    public void add(int amount) {
+        this.amount += amount;
+    }
+
+    public boolean use(int amount) {
+        if (this.amount >= amount) {
+            this.amount -= amount;
+            return true;
+        }
+        return false;
+    }
+}
+
+// Class to manage ingredients
+class IngredientManager {
+    private Map<String, Ingredient> ingredients;
+
+    public IngredientManager() {
+        ingredients = new HashMap<>();
+    }
+
+    public void addIngredient(String name, int amount) {
+        ingredients.put(name, new Ingredient(name, amount));
+    }
+
+    public Ingredient getIngredient(String name) {
+        return ingredients.get(name);
+    }
+
+    public void refillIngredient(String name, int amount) {
+        if (ingredients.containsKey(name)) {
+            ingredients.get(name).add(amount);
+        }
+    }
+
+    public boolean isAvailable(String name, int amount) {
+        Ingredient ingredient = ingredients.get(name);
+        return ingredient != null && ingredient.getAmount() >= amount;
+    }
+
+    public Map<String, Ingredient> getIngredients() {
+        return ingredients;
+    }
+}
+
+// Drink interface
+interface Drink {
+    String getName();
+    Map<String, Integer> getRecipe();
+}
+
+// Concrete drink classes
+class Espresso implements Drink {
+    @Override
+    public String getName() {
+        return "Espresso";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("coffee_beans", 3);
+        recipe.put("water", 1);
+        recipe.put("milk", 0);
+        return recipe;
+    }
+}
+
+class Americano implements Drink {
+    @Override
+    public String getName() {
+        return "Americano";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("coffee_beans", 2);
+        recipe.put("water", 3);
+        recipe.put("milk", 0);
+        return recipe;
+    }
+}
+
+class Latte implements Drink {
+    @Override
+    public String getName() {
+        return "Latte";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("coffee_beans", 2);
+        recipe.put("water", 2);
+        recipe.put("milk", 2);
+        return recipe;
+    }
+}
+
+class HotChocolate implements Drink {
+    @Override
+    public String getName() {
+        return "Hot Chocolate";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("water", 1);
+        recipe.put("milk", 2);
+        recipe.put("chocolate", 3);
+        return recipe;
+    }
+}
+
+// Class to build custom drinks
+class CustomDrink implements Drink {
+    private String name;
+    private Map<String, Integer> recipe;
+
+    public CustomDrink(String name) {
+        this.name = name;
+        this.recipe = new HashMap<>();
+    }
+
+    public CustomDrink addIngredient(String ingredient, int quantity) {
+        recipe.put(ingredient, quantity);
+        return this;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        return recipe;
+    }
+}
+
+// CoffeeMaker class that utilizes the IngredientManager and Drink classes
+class CoffeeMaker {
+    private IngredientManager ingredientManager;
+    private Map<String, Drink> drinks;
+
+    public CoffeeMaker() {
+        ingredientManager = new IngredientManager();
+        drinks = new HashMap<>();
+        createDefaultDrinks();
+    }
+
+    public void createDefaultDrinks() {
+        addDrink(new Espresso());
+        addDrink(new Americano());
+        addDrink(new Latte());
+        addDrink(new HotChocolate());
+    }
+
+    public void addDrink(Drink drink) {
+        drinks.put(drink.getName(), drink);
+    }
+
+    public void refillIngredients(String name, int amount) {
+        ingredientManager.refillIngredient(name, amount);
+        System.out.println(name + " refilled with " + amount + " units.");
+    }
+
+    public void showAvailableDrinks() {
+        System.out.println("Available drinks:");
+        for (String drink : drinks.keySet()) {
+            System.out.println(drink);
+        }
+    }
+
+    public void prepareDrink(String drinkName) {
+        if (!drinks.containsKey(drinkName)) {
+            System.out.println("Drink not available.");
+            return;
+        }
+
+        Map<String, Integer> requiredIngredients = drinks.get(drinkName).getRecipe();
+        if (hasEnoughIngredients(requiredIngredients)) {
+            for (Map.Entry<String, Integer> entry : requiredIngredients.entrySet()) {
+                ingredientManager.getIngredient(entry.getKey()).use(entry.getValue());
+            }
+            System.out.println(drinkName + " is being prepared.");
+        } else {
+            System.out.println("Not enough ingredients to prepare " + drinkName + ".");
+        }
+    }
+
+    private boolean hasEnoughIngredients(Map<String, Integer> requiredIngredients) {
+        for (Map.Entry<String, Integer> entry : requiredIngredients.entrySet()) {
+            if (!ingredientManager.isAvailable(entry.getKey(), entry.getValue())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void createCustomDrink(String name, Map<String, Integer> recipe) {
+        CustomDrink customDrink = new CustomDrink(name);
+        for (Map.Entry<String, Integer> entry : recipe.entrySet()) {
+            customDrink.addIngredient(entry.getKey(), entry.getValue());
+        }
+        addDrink(customDrink);
+        System.out.println("Custom drink " + name + " created.");
+    }
+
+    public static void main(String[] args) {
+        CoffeeMaker coffeeMaker = new CoffeeMaker();
+        
+        // Add ingredients
+        coffeeMaker.ingredientManager.addIngredient("coffee_beans", 10);
+        coffeeMaker.ingredientManager.addIngredient("water", 10);
+        coffeeMaker.ingredientManager.addIngredient("milk", 5);
+        coffeeMaker.ingredientManager.addIngredient("chocolate", 10);
+
+        // User interactions
+        coffeeMaker.showAvailableDrinks();
+        
+        // User prepares a drink
+        coffeeMaker.prepareDrink("Espresso");
+        coffeeMaker.prepareDrink("Hot Chocolate");
+
+        // Create a custom drink
+        Map<String, Integer> customRecipe = new HashMap<>();
+        customRecipe.put("coffee_beans", 4);
+        customRecipe.put("water", 2);
+        customRecipe.put("milk", 1);
+        coffeeMaker.createCustomDrink("Custom Latte", customRecipe);
+        
+        // Prepare the custom drink
+        coffeeMaker.prepareDrink("Custom Latte");
+        
+        // Show remaining ingredients
+        System.out.println("Remaining ingredients:");
+        coffeeMaker.ingredientManager.getIngredients().forEach((k, v) -> 
+            System.out.println(v.getName() + ": " + v.getAmount()));
+    }
+}
