@@ -1,0 +1,154 @@
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+enum RideType {
+    ECONOMY, PREMIUM
+}
+
+abstract class User {
+    protected String userId;
+    protected String name;
+    protected String phoneNumber;
+    protected double rating;
+
+    public User(String userId, String name, String phoneNumber) {
+        this.userId = userId;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.rating = 0.0;
+    }
+}
+
+class Passenger extends User {
+    public Passenger(String userId, String name, String phoneNumber) {
+        super(userId, name, phoneNumber);
+    }
+
+    public Ride requestRide(RideService rideService, String pickupLocation, String dropoffLocation, RideType rideType) {
+        return rideService.createRide(this, pickupLocation, dropoffLocation, rideType);
+    }
+}
+
+class Driver extends User {
+    private String carType;
+    private boolean available;
+
+    public Driver(String userId, String name, String phoneNumber, String carType) {
+        super(userId, name, phoneNumber);
+        this.carType = carType;
+        this.available = true;
+    }
+
+    public void acceptRide(Ride ride) {
+        ride.setDriver(this);
+        this.available = false;
+        ride.startRide();
+    }
+
+    public void completeRide(Ride ride) {
+        ride.completeRide();
+        this.available = true;
+    }
+
+    public boolean isAvailable() {
+        return available;
+    }
+}
+
+class Ride {
+    private Passenger passenger;
+    private Driver driver;
+    private String pickupLocation;
+    private String dropoffLocation;
+    private RideType rideType;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private double fare;
+    private String status; // "REQUESTED", "ONGOING", "COMPLETED"
+
+    public Ride(Passenger passenger, String pickupLocation, String dropoffLocation, RideType rideType) {
+        this.passenger = passenger;
+        this.pickupLocation = pickupLocation;
+        this.dropoffLocation = dropoffLocation;
+        this.rideType = rideType;
+        this.status = "REQUESTED";
+    }
+
+    public void startRide() {
+        this.startTime = LocalDateTime.now();
+        this.status = "ONGOING";
+        System.out.println("Ride started from " + pickupLocation + " to " + dropoffLocation);
+    }
+
+    public void completeRide() {
+        this.endTime = LocalDateTime.now();
+        this.status = "COMPLETED";
+        calculateFare();
+        System.out.println("Ride completed. Fare: " + fare);
+    }
+
+    public void setDriver(Driver driver) {
+        this.driver = driver;
+    }
+
+    private void calculateFare() {
+        Random rand = new Random();
+        int distance = rand.nextInt(10) + 1; // Mock distance (1 to 10 miles)
+        int time = rand.nextInt(26) + 5; // Mock time (5 to 30 minutes)
+        double baseFare = 5.0;
+        double perMileRate = (rideType == RideType.ECONOMY) ? 2.0 : 3.0;
+        double perMinuteRate = 0.5;
+        this.fare = baseFare + (distance * perMileRate) + (time * perMinuteRate);
+    }
+}
+
+class RideService {
+    private List<Ride> rides;
+
+    public RideService() {
+        rides = new ArrayList<>();
+    }
+
+    public Ride createRide(Passenger passenger, String pickupLocation, String dropoffLocation, RideType rideType) {
+        Ride ride = new Ride(passenger, pickupLocation, dropoffLocation, rideType);
+        rides.add(ride);
+        System.out.println("Ride requested by " + passenger.name + ": " + pickupLocation + " to " + dropoffLocation);
+        return ride;
+    }
+
+    public Driver findAvailableDriver(List<Driver> drivers) {
+        for (Driver driver : drivers) {
+            if (driver.isAvailable()) {
+                return driver;
+            }
+        }
+        return null;
+    }
+}
+
+class PaymentService {
+    public static void processPayment(Ride ride) {
+        System.out.println("Processing payment for the ride with fare: " + ride.fare);
+    }
+}
+
+public class RideSharingApp {
+    public static void main(String[] args) {
+        // Sample Data
+        Passenger passenger = new Passenger("1", "Alice", "123-456-7890");
+        Driver driver = new Driver("1", "Bob", "098-765-4321", "Sedan");
+
+        RideService rideService = new RideService();
+        Ride ride = passenger.requestRide(rideService, "Location A", "Location B", RideType.ECONOMY);
+
+        // Assume we find an available driver and the driver accepts the ride
+        Driver availableDriver = rideService.findAvailableDriver(List.of(driver));
+        if (availableDriver != null) {
+            availableDriver.acceptRide(ride);
+            availableDriver.completeRide(ride);
+            PaymentService.processPayment(ride);
+        }
+    }
+}
