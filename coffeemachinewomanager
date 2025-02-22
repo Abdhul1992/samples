@@ -1,0 +1,224 @@
+import java.util.HashMap;
+import java.util.Map;
+
+// Ingredient class to represent different ingredients
+class Ingredient {
+    private String name;
+    private int amount;
+
+    public Ingredient(String name, int amount) {
+        this.name = name;
+        this.amount = amount;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getAmount() {
+        return amount;
+    }
+
+    public void add(int amount) {
+        this.amount += amount;
+    }
+
+    public boolean use(int amount) {
+        if (this.amount >= amount) {
+            this.amount -= amount;
+            return true;
+        }
+        return false;
+    }
+}
+
+// Interface for Drink
+interface Drink {
+    String getName();
+    Map<String, Integer> getRecipe();
+}
+
+// Concrete Drink classes
+class Espresso implements Drink {
+    @Override
+    public String getName() {
+        return "Espresso";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("coffee_beans", 3);
+        recipe.put("water", 1);
+        recipe.put("milk", 0);
+        return recipe;
+    }
+}
+
+class Americano implements Drink {
+    @Override
+    public String getName() {
+        return "Americano";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("coffee_beans", 2);
+        recipe.put("water", 3);
+        recipe.put("milk", 0);
+        return recipe;
+    }
+}
+
+class Latte implements Drink {
+    @Override
+    public String getName() {
+        return "Latte";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("coffee_beans", 2);
+        recipe.put("water", 2);
+        recipe.put("milk", 2);
+        return recipe;
+    }
+}
+
+// New HotChocolate class implementing Drink interface
+class HotChocolate implements Drink {
+    @Override
+    public String getName() {
+        return "Hot Chocolate";
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        Map<String, Integer> recipe = new HashMap<>();
+        recipe.put("water", 1);
+        recipe.put("milk", 2);
+        recipe.put("chocolate", 3); // Assuming 3 units of chocolate are needed
+        return recipe;
+    }
+}
+
+// CustomDrink class to represent user-defined drinks
+class CustomDrink implements Drink {
+    private String name;
+    private Map<String, Integer> recipe;
+
+    public CustomDrink(String name, Map<String, Integer> recipe) {
+        this.name = name;
+        this.recipe = recipe;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public Map<String, Integer> getRecipe() {
+        return recipe;
+    }
+}
+
+// CoffeeMaker class that utilizes the Ingredient and Drink classes
+class CoffeeMaker {
+    private Map<String, Ingredient> ingredients;
+    private Map<String, Drink> drinks;
+
+    public CoffeeMaker() {
+        ingredients = new HashMap<>();
+        ingredients.put("coffee_beans", new Ingredient("coffee_beans", 0));
+        ingredients.put("water", new Ingredient("water", 0));
+        ingredients.put("milk", new Ingredient("milk", 0));
+        ingredients.put("chocolate", new Ingredient("chocolate", 0)); // Add chocolate ingredient
+
+        drinks = new HashMap<>();
+        addDrink(new Espresso());
+        addDrink(new Americano());
+        addDrink(new Latte());
+        addDrink(new HotChocolate()); // Register the Hot Chocolate drink
+    }
+
+    public void addDrink(Drink drink) {
+        drinks.put(drink.getName(), drink);
+    }
+
+    public void refillIngredients(int coffeeBeans, int water, int milk, int chocolate) {
+        ingredients.get("coffee_beans").add(coffeeBeans);
+        ingredients.get("water").add(water);
+        ingredients.get("milk").add(milk);
+        ingredients.get("chocolate").add(chocolate); // Refill chocolate
+        System.out.println("Ingredients refilled.");
+    }
+
+    public void showAvailableDrinks() {
+        System.out.println("Available drinks:");
+        for (String drink : drinks.keySet()) {
+            System.out.println(drink);
+        }
+    }
+
+    public void createCustomDrink(String drinkName, Map<String, Integer> recipe) {
+        // Check if the recipe is valid (ingredients should be available)
+        for (String ingredientName : recipe.keySet()) {
+            if (!ingredients.containsKey(ingredientName)) {
+                System.out.println("Invalid ingredient: " + ingredientName);
+                return;
+            }
+        }
+        // Add custom drink to the list
+        addDrink(new CustomDrink(drinkName, recipe));
+        System.out.println("Custom drink " + drinkName + " created.");
+    }
+
+    public void prepareDrink(String drinkName) {
+        if (!drinks.containsKey(drinkName)) {
+            System.out.println("Drink not available.");
+            return;
+        }
+
+        Map<String, Integer> requiredIngredients = drinks.get(drinkName).getRecipe();
+        if (hasEnoughIngredients(requiredIngredients)) {
+            for (String ingredientName : requiredIngredients.keySet()) {
+                ingredients.get(ingredientName).use(requiredIngredients.get(ingredientName));
+            }
+            System.out.println(drinkName + " is being prepared.");
+        } else {
+            System.out.println("Not enough ingredients to prepare the drink.");
+        }
+    }
+
+    private boolean hasEnoughIngredients(Map<String, Integer> requiredIngredients) {
+        for (String ingredientName : requiredIngredients.keySet()) {
+            if (!ingredients.get(ingredientName).use(requiredIngredients.get(ingredientName))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public Map<String, Ingredient> getIngredients() {
+        return ingredients;
+    }
+
+    public static void main(String[] args) {
+        CoffeeMaker coffeeMaker = new CoffeeMaker();
+        
+        // Admin refills ingredients
+        coffeeMaker.refillIngredients(10, 10, 5, 10);
+        
+        // User interactions
+        coffeeMaker.showAvailableDrinks();
+        
+        // User prepares Hot Chocolate
+        coffeeMaker.prepareDrink("Hot Chocolate");
+        
+        // Show remaining ingredients
+        System.out.println(coffeeMaker.getIngredients());
+    }
+}
